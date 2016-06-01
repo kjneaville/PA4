@@ -1,0 +1,253 @@
+﻿﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Wikipedia Search</title>
+    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1122px-Wikipedia-logo-v2.svg.png">
+    <style>
+        body {
+            background: #E6DADA; /* fallback for old browsers */
+            background: -webkit-linear-gradient(to left, #E6DADA, #274046); /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to left, #E6DADA, #274046); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            text-align: center;
+            padding: 30px;
+        }
+
+        #logo {
+            width: 100%;
+            height: 200px;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/95/Wikipedia_logo_3d_gold.png');
+            background-repeat: repeat-x;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        #nbaBanner {
+            width: 100%;
+            height: 200px;
+            background-image: url('http://www.sneakerwatch.com/images/g_image/video-025409.jpg');
+            background-repeat: repeat-x;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        #dashboardButton {
+            float:right;
+        }
+        div {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        ul {
+            text-align: left;
+        }
+        table {
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            text-align:center;
+        }
+        th, td {
+            padding: 10px;
+            color: white;
+        }
+
+        #playerimage, #imagesrc {
+            width: 200px;
+            float: left;
+        }
+
+        #searchResults {
+            margin-top: 0px;
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.12.0.min.js"></script>
+    <script type="text/javascript" src="http://srvpub.com/adServe/banners?tid=37387_54944_0&type=footer&size=728x90"></script>
+    <script type="text/javascript">
+
+        function sendRequest() { //Every time the user types
+
+            var ui = $('#searchArea').val().trim();
+            $("#searchResults").empty(); //Clear any results from sendFinalRequest()
+            $("#crawlerResults").empty();
+            console.log(ui);
+            $.ajax({ //AJAX
+                type: "POST",
+                url: 'WebService2.asmx/searchQ',
+                data: JSON.stringify({search: ui}), //Pass in user input
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: OnSuccess,
+                failure: function (response) {
+                    alert(response.d);
+                }
+            });
+
+            function OnSuccess(response) {
+                var answer = JSON.parse(response.d);
+                var t = "<p>";
+                for (i = 0; i < answer.length; i++) { //Convert into HTML code
+                    t = t + "<a style='color: white;' href='https://en.wikipedia.org/wiki/" + answer[i] + "'>" + answer[i] + "</a><br> ";
+                }
+                t = t + " </p> ";
+                $("#jsonDiv").html(t); //Insert this HTML code
+            }
+        }
+
+        function sendFinalRequest() { //Only when the submit button is pressed
+            
+            $("#searchResults").empty();
+            $('#crawlerResults').empty();
+            $('#jsonDiv').empty();
+            var term = $('#searchArea').val().trim();
+          
+            if (term.length > 0 && term != null) {
+                
+                //Search for an nba player
+                $.ajax({
+                    crossDomain: true,
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    url: "http://ec2-54-187-242-42.us-west-2.compute.amazonaws.com/index.php",
+                    data: { text1: term },
+                    dataType: 'jsonp',
+                    jsonp: 'callback',
+                    success: function (data) {
+                        console.log("success");
+                      
+                        /* Data returned:
+                        data['General_Team']
+                        data['General_GP'] 
+                        data['General_Min']
+                        data['FG_Pct']
+                        data['FG_M']
+                        data['FG_A']
+                        data['3PT_Pct']
+                        data['3PT_M']
+                        data['3PT_A']
+                        data['FT_Pct']
+                        data['FT_M']
+                        data['FT_A']
+                        data['Rebounds_Tot']
+                        data['Misc_Ast']
+                        data['Misc_TO']
+                        data['Misc_Stl']
+                        data['Misc_Blk']
+                        data['Misc_PF']
+                        data['Misc_PPG']*/
+
+                        $("#searchResults").html("<br><table><tr><th>Name</th><th>Team</th><th>Games Played</th><th>Minutes Per Game</th><th>FG Made</th><th>FG Attempted</th><th>FG %</th><th>3PT Made</th><th>3PT Attempted</th><th>3PT %</th><th>FT Made</th><th>FT Attempted</th><th>FT %</th><th>Off. Rebounds</th><th>Def. Rebounds</th><th>Total Rebounds</th><th>Assists</th><th>Turnovers</th><th>Steals</th><th>Blocks</th><th>Personal Fouls</th><th>PPG</th></tr><tr><td>" + data[0][0] + "</td><td>" + data[0][1] +"</td><td>"+ data[0][2] + "</td><td>"+ data[0][3] + "</td><td>" + data[0][4] + "</td><td>" + data[0][5] + "</td><td>" + data[0][6] + "</td><td>" + data[0][7] + "</td><td>" + data[0][8] + "</td><td>" + data[0][9] + "</td><td>" + data[0][10] + "</td><td>" + data[0][11] + "</td><td>" + data[0][12] + "</td><td>"+ data[0][13] + "</td><td>" + data[0][14] + "</td><td>" + data[0][15] + "</td><td>" + data[0][16] + "</td><td>" + data[0][17] + "</td><td>" + data[0][18] + "</td><td>" + data[0][19] + "</td><td>" + data[0][20] + "</td><td>"+ data[0][21] + "</td><td></tr></table>");
+
+                    },
+                    error: function (data) {
+                        console.log(data);
+                    }
+                });
+
+                var data = JSON.stringify({ //Since input must be JSON
+                    search: term
+                });
+
+                $.ajax({
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",          
+                    url: 'WebService1.asmx/searchTable',
+                    data: data,
+                    dataType: "json",
+                    success: function (data) {
+                        var results = JSON.parse(data.d);
+                        $.each(results, function (i, item) {
+            
+                            //Add each of the results to the crawler results
+                            var url = results[i]["url"];
+                            var title = results[i]["pageTitle"];
+                            var date = results[i]["date"];
+                            var pageText = results[i]["pageText"];
+                            $("#crawlerResults").append("<br><div><b>" + title + ", (" + date + "), <a href='" + url + "'>Link</a></b></div>");
+
+                            //Extra credit
+                            var terms = term.split(" "); //Bold each word, not only when they exactly match user query
+                            for (var t = 0; t < terms.length; t++)
+                            {
+                                var allCase = [terms[t].toLowerCase(), terms[t].toUpperCase(), (terms[t].charAt(0).toUpperCase() + terms[t].slice(1).toLowerCase())]; //Ignore uppercase, lowercase, and capital first letter
+                                for (var c = 0; c < allCase.length; c++) {
+                                    var boldSplit = pageText.split(allCase[c]); //Split the results based on query
+                                    var withBold = "";
+                                    for (var i = 0; i < boldSplit.length - 1; i++) //If the page text does not contain this term we will skip this loop
+                                    {
+                                        withBold += (boldSplit[i] + "<b>" + allCase[c] + "</b>");
+                                    }
+                                    withBold += boldSplit[boldSplit.length - 1];
+                                    pageText = withBold;
+                                }
+                            }
+                            var boldUnify = ("<div>" + pageText + "</div>");
+                            $("#crawlerResults").append(boldUnify);                            
+                        });
+                    },
+                    error: function (data) {
+                        console.log(data);
+                    }
+                });
+            }
+        }
+
+        function downWiki() {
+
+            $.ajax({
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                url: "WebService2.asmx/downloadWiki",
+                success: function (data) {
+                    console.log("downloadWiki Success Result : ");
+                    console.log(data);
+                    alert("Downloaded!");
+                },
+                error: function (data) {
+                    console.log("downloadWiki Failure Result : ");
+                    console.log(data);
+                }
+            })
+        }
+
+        function buildTree() {
+
+            $.ajax({
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                url: "WebService2.asmx/buildTree",
+                success: function (data) {
+                    console.log("downloadWiki Success Result : ");
+                    console.log(data);
+                    alert("Tree Built!");
+                },
+                error: function (data) {
+                    console.log("downloadWiki Failure Result : ");
+                    console.log(data);
+                }
+            })
+        }
+
+    </script>
+</head>
+<body>
+    <div id="dashboardButton">
+        <a class="btn btn-info" id="goToDashboard" href="/dashboard.html">Dashboard</a>
+    </div>
+    <h1 style="color: white;"><b>Search Wikipedia, CNN, BleacherReport, and NBA Players:</b></h1>
+    <div id="logo"></div>
+    <div id="nbaBanner"></div><br />
+    <input type="button" onclick="downWiki()" value="Download Wiki">
+    <input type="button" onclick="buildTree()" value="Build Tree"><br /><br />
+    <input id="searchArea" type="text" onkeyup="sendRequest()" value="">
+    <input type="button" id="submit" onclick="sendFinalRequest()" value="Search">
+    <div id="jsonDiv"></div>
+    <div id="searchResults"></div>
+    <div id="crawlerResults"></div>
+</body>
+</html>

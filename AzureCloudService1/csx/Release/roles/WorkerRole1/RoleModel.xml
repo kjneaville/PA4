@@ -13,7 +13,7 @@
     <Property name="Configuration" value="Release" />
     <Property name="Platform" value="AnyCPU" />
     <Property name="RoleTargetFramework" value="v4.5.1" />
-    <Property name="OutputDir" value="E:\AzureCloudService1\AzureCloudService1\obj\Release\WorkerRole1\" />
+    <Property name="OutputDir" value="E:\PA4\AzureCloudService1\AzureCloudService1\obj\Release\WorkerRole1\" />
     <Property name="EntryPoint" value="WorkerRole1.dll" />
     <Property name="SourceDir" value="" />
     <Property name="SitePhysicalPath" value="" />

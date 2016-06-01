@@ -22,6 +22,7 @@
             list-style-position: inside;
         }
     </style>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
     <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.12.0.min.js"></script>
     <script type="text/javascript">
@@ -104,7 +105,40 @@
 
         }
 
-        function getPageTitle() {
+        function getPageTitle() { //Retrieve statistics to display on the dashboard
+
+            var trieSize = 0;
+            var lastStr = "No titles added";
+
+            $.ajax({ //AJAX
+                type: "GET",
+                url: 'WebService2.asmx/getTitleCount',
+                dataType: 'text',
+                success: function (response) {
+                    {
+                        console.log(response);
+                        trieSize = response;
+                    }
+                },
+                failure: function () {
+                    alert(response.d);
+                }
+            });
+
+            $.ajax({ //AJAX
+                type: "GET",
+                url: 'WebService2.asmx/getLastTitle',
+                dataType: 'text',
+                success: function (response) {
+                    {
+                        console.log(response);
+                        lastStr = response;
+                    }
+                },
+                failure: function () {
+                    alert(response.d);
+                }
+            });
 
             $.ajax({ //AJAX
                 type: "POST",
@@ -115,7 +149,7 @@
                     {
                         var answer = JSON.parse(response.d);
                         var tenUrl = answer[4].split(',');
-                        var t = "<h2><b>Worker Role Status:</b> " + answer[0] + "</h2><h2><b>RAM: </b>" + answer[1] + "</h2><h2><b>CPU:</b> " + answer[2] + "</h2><h2><b>URLs Crawled: </b>" + answer[3] + "</h2><h2><b>Last 10 URLs:</b><br><ol type='1'>";
+                        var t = "<h2><b>Worker Role Status:</b> " + answer[0] + "</h2><h2><b>RAM: </b>" + answer[1] + "</h2><h2><b>CPU:</b> " + answer[2] + "</h2><h2><b>Number of Titles in Trie: </b>" + trieSize + "</h2><h2><b>Last Title Added to Trie: </b>" + lastStr + "</h2><h2><b>URLs Crawled: </b>" + answer[3] + "</h2><h2><b>Last 10 URLs:</b><br><ol type='1'>";
                         for (var i = tenUrl.length - 1; i >= 0; i--)
                         {
                             t += "<li>" + tenUrl[i] + "</li>";
@@ -140,7 +174,6 @@
     </script>
 </head>
 <body>
-
     <div style="height: 100%; width: 20%; float:left;
 
 background: #304352; /* fallback for old browsers */
@@ -148,7 +181,7 @@ background: -webkit-linear-gradient(to left, #304352 , #d7d2cc); /* Chrome 10-25
 background: linear-gradient(to left, #304352 , #d7d2cc); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         ">
         <br />
-        <!--<input id="searchArea" type="text" value="">-->
+        <input type="button" onclick="location.href='/index.html';" value="Go to Search Page (Home Page)"/><br /><br /><br /><br /><br /><br />
         <button onclick="startCrawling()">Start Crawling</button><br /><br />
         <button onclick="stopCrawling()">Stop Crawling</button><br /><br />
         <button onclick="clearIndex()">Clear Queue</button><br /><br />
@@ -164,12 +197,13 @@ background: linear-gradient(to left, #4CA1AF , #C4E0E5); /* W3C, IE 10+/ Edge, F
         <h2><b>Worker Role Status</b></h2>
         <h2><b>RAM</b></h2>
         <h2><b>CPU</b></h2>
+        <h2><b>Number of Titles in Trie</b></h2>
+        <h2><b>Last Title Added to Trie</b></h2>
         <h2><b>URLs Crawled</b></h2>
         <h2><b>Last 10 URLs</b></h2>
         <h2><b>Queue Size</b></h2>
         <h2><b>Table Size</b></h2>
         <h2><b>Errors and Urls</b></h2>
     </div>
-
 </body>
 </html>

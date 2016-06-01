@@ -24,14 +24,14 @@
     <Property name="SetConfiguration" value="Configuration=Debug" />
     <Property name="SetPlatform" value="Platform=AnyCPU" />
     <Property name="RoleTargetFramework" value="v4.5.1" />
-    <Property name="OutputDir" value="E:\AzureCloudService1\AzureCloudService1\obj\Debug\WebRole1\" />
+    <Property name="OutputDir" value="E:\PA4\AzureCloudService1\AzureCloudService1\obj\Debug\WebRole1\" />
     <Property name="EntryPoint" value="WebRole1.dll" />
-    <Property name="SourceDir" value="E:\AzureCloudService1\WebRole1\" />
-    <Property name="SitePhysicalPath" value="E:\AzureCloudService1\WebRole1\" />
+    <Property name="SourceDir" value="E:\PA4\AzureCloudService1\WebRole1\" />
+    <Property name="SitePhysicalPath" value="E:\PA4\AzureCloudService1\WebRole1\" />
     <Property name="TargetRuntimeVersion" value="v4.0" />
   </Properties>
   <Sites>
-    <Site name="Web" physicalDirectory="E:\AzureCloudService1\WebRole1\">
+    <Site name="Web" physicalDirectory="E:\PA4\AzureCloudService1\WebRole1\">
       <Bindings>
         <Binding name="Endpoint1" endpointName="Endpoint1" />
       </Bindings>

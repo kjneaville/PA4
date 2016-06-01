@@ -1,0 +1,88 @@
+﻿﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Wikipedia Search</title>
+    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/en/thumb/8/80/Wikipedia-logo-v2.svg/1122px-Wikipedia-logo-v2.svg.png">
+    <style>
+        body {
+            background: #E6DADA; /* fallback for old browsers */
+            background: -webkit-linear-gradient(to left, #E6DADA, #274046); /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to left, #E6DADA, #274046); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            text-align: center;
+            padding: 30px;
+        }
+
+        #logo {
+            width: 100%;
+            height: 200px;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/95/Wikipedia_logo_3d_gold.png');
+            background-repeat: repeat-x;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        #nbaBanner {
+            width: 100%;
+            height: 200px;
+            background-image: url('http://www.sneakerwatch.com/images/g_image/video-025409.jpg');
+            background-repeat: repeat-x;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        #dashboardButton {
+            float:right;
+        }
+        div {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        ul {
+            text-align: left;
+        }
+        table {
+            width: 100%;
+        }
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            text-align:center;
+        }
+        th, td {
+            padding: 10px;
+            color: white;
+        }
+
+        #playerimage, #imagesrc {
+            width: 200px;
+            float: left;
+        }
+
+        #searchResults {
+            margin-top: 0px;
+        }
+
+    </style>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.12.0.min.js"></script>
+    <script type="text/javascript" src="http://srvpub.com/adServe/banners?tid=37387_54944_0&type=footer&size=728x90"></script>
+    <script type="text/javascript" src="search.js"></script>
+</head>
+<body>
+    <div id="dashboardButton">
+        <a class="btn btn-info" id="goToDashboard" href="/dashboard.html">Dashboard</a>
+    </div>
+    <h1 style="color: white;"><b>Search Wikipedia, CNN, BleacherReport, and NBA Players:</b></h1>
+    <div id="logo"></div>
+    <div id="nbaBanner"></div><br />
+    <input type="button" onclick="downWiki()" value="Download Wiki">
+    <input type="button" onclick="buildTree()" value="Build Tree"><br /><br />
+    <input id="searchArea" type="text" onkeyup="sendRequest()" value="">
+    <input type="button" id="submit" onclick="sendFinalRequest()" value="Search">
+    <div id="jsonDiv"></div>
+    <div id="searchResults"></div>
+    <div id="crawlerResults"></div>
+</body>
+</html>

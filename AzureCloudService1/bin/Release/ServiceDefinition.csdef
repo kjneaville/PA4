@@ -25,7 +25,7 @@
     </Endpoints>
     <Contents>
       <Content destination=".\">
-        <SourceDirectory path="E:\AzureCloudService1\AzureCloudService1\rcf\Release\WebRole1Content\" />
+        <SourceDirectory path="E:\PA4\AzureCloudService1\AzureCloudService1\rcf\Release\WebRole1Content\" />
       </Content>
     </Contents>
   </WebRole>
@@ -35,7 +35,7 @@
     </ConfigurationSettings>
     <Contents>
       <Content destination=".\">
-        <SourceDirectory path="E:\AzureCloudService1\AzureCloudService1\rcf\Release\WorkerRole1Content\" />
+        <SourceDirectory path="E:\PA4\AzureCloudService1\AzureCloudService1\rcf\Release\WorkerRole1Content\" />
       </Content>
     </Contents>
   </WorkerRole>

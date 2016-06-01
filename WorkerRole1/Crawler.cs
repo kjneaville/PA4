@@ -15,13 +15,13 @@ using HtmlAgilityPack;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace WorkerRole1
 {
     public class Crawler
     {
-        public static string baseUrl;                               //For CNN
-        //public static string baseUrl2;                            //For BleacherReport
+        public static List<string> baseUrls = new List<string>();
         public static Queue<string> sitemap = new Queue<string>();  //Sitemap of our baseURL
         public static List<string> disallowedUrls;                  //Respect robots.txt
 
@@ -55,8 +55,11 @@ namespace WorkerRole1
             // Set the maximum number of concurrent connections
             ServicePointManager.DefaultConnectionLimit = 12;
 
-            baseUrl = "http://cnn.com";
-            //baseUrl2 = "http://bleacherreport.com";
+            if (baseUrls.Count == 0)
+            {
+                baseUrls.Add("http://cnn.com");
+                baseUrls.Add("http://bleacherreport.com");
+            }
             countTable = 0;
             disallowedUrls = new List<string>();
             storageAccount = CloudStorageAccount.Parse(
@@ -78,45 +81,50 @@ namespace WorkerRole1
             {
                 startSitemap();
             }
-            ProcessHTML(baseUrl + "/");
-            //ProcessHTML(baseUrl2 + "/");
         }
 
         public void Run()
         {
             while (true) //Always
             {
-                Thread.Sleep(500);
-                CloudQueueMessage com = queueRef.GetMessage(TimeSpan.FromMinutes(5)); //Check command queue
-                if (com != null)
+                try
                 {
-                    queueRef.DeleteMessage(com);
-                    string comPhrase = com.AsString;
-                    if (comPhrase.Equals("stop")) //stop crawl
+                    Thread.Sleep(500);
+                    CloudQueueMessage com = queueRef.GetMessage(TimeSpan.FromMinutes(5)); //Check command queue
+                    if (com != null)
                     {
-                        stopCrawl();
+                        queueRef.DeleteMessage(com);
+                        string comPhrase = com.AsString;
+                        if (comPhrase.Equals("stop")) //stop crawl
+                        {
+                            stopCrawl();
+                        }
+                        else if (comPhrase.Equals("start")) //start crawl
+                        {
+                            startCrawl();
+                        }
+                        else if (comPhrase.Equals("clear")) //clear index
+                        {
+                            clearIndex();
+                        }
+                        else if (comPhrase.Equals("table")) //clear table
+                        {
+                            clearTable();
+                        }
                     }
-                    else if (comPhrase.Equals("start")) //start crawl
+                    if (crawlerStatus != 0) //If not stopped
                     {
-                        startCrawl();
-                    }
-                    else if (comPhrase.Equals("clear")) //clear index
-                    {
-                        clearIndex();
-                    }
-                    else if (comPhrase.Equals("table")) //clear table
-                    {
-                        clearTable();
+                        CloudQueueMessage urlToProcess = queueRef2.GetMessage(TimeSpan.FromMinutes(5)); //Check URL queue
+                        if (urlToProcess != null)
+                        {
+                            ProcessHTML(urlToProcess.AsString);
+                            queueRef2.DeleteMessage(urlToProcess);
+                        }
                     }
                 }
-                if (crawlerStatus != 0) //If not stopped
+                catch(Exception e)
                 {
-                    CloudQueueMessage urlToProcess = queueRef2.GetMessage(TimeSpan.FromMinutes(5)); //Check URL queue
-                    if (urlToProcess != null)
-                    {
-                        queueRef2.DeleteMessage(urlToProcess);
-                        ProcessHTML(urlToProcess.AsString);
-                    }
+                    errList += "$" + e;
                 }
             }
 
@@ -128,44 +136,38 @@ namespace WorkerRole1
             //Only start when crawlerStatus is -1
             if (crawlerStatus == -1)
             {
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(baseUrl + "/robots.txt");
-                HttpWebResponse res = (HttpWebResponse)req.GetResponse();
-                Stream stream = res.GetResponseStream();
-                StreamReader reader = new StreamReader(stream);
-                List<string> lines = new List<string>();
-                string line = reader.ReadLine();
-                while (line != null)
+                foreach (string baseUrl in baseUrls)
                 {
-                    string[] words = line.Split(new char[] { ' ' });
-                    if (line.Contains("Sitemap"))
+                    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(baseUrl + "/robots.txt");
+                    HttpWebResponse res = (HttpWebResponse)req.GetResponse();
+                    Stream stream = res.GetResponseStream();
+                    StreamReader reader = new StreamReader(stream);
+                    List<string> lines = new List<string>();
+                    string line = reader.ReadLine();
+                    while (line != null)
                     {
-                        sitemap.Enqueue(words[1]); //Add to sitemap
+                        string[] words = line.Split(new char[] { ' ' });
+                        if (line.Contains("Sitemap"))
+                        {
+                            if (baseUrl.Contains("bleacherreport.com"))
+                            {
+                                if (line.Contains("/nba"))
+                                {
+                                    sitemap.Enqueue(words[1]);
+                                }
+                            }
+                            else
+                            {
+                                sitemap.Enqueue(words[1]);
+                            }
+                        }
+                        else if (line.Contains("Disallow"))
+                        {
+                            disallowedUrls.Add(words[1]); //Not allowed, make sure not crawled later
+                        }
+                        line = reader.ReadLine();
                     }
-                    else if (line.Contains("Disallow"))
-                    {
-                        disallowedUrls.Add(words[1]); //Not allowed, make sure not crawled later
-                    }
-                    line = reader.ReadLine();
                 }
-                /*HttpWebRequest request2 = (HttpWebRequest)WebRequest.Create(baseUrl2 + "/robots.txt"); //For BleacherReport
-                HttpWebResponse response2 = (HttpWebResponse)request2.GetResponse();
-                Stream resStream2 = response2.GetResponseStream();
-                StreamReader reader2 = new StreamReader(resStream2);
-                List<string> lines2 = new List<string>();
-                string line2 = reader.ReadLine();
-                while (line2 != null)
-                {
-                    string[] words = line2.Split(new char[] { ' ' });
-                    if (line2.Contains("Sitemap"))
-                    {
-                        sitemap.Enqueue(words[1]);
-                    }
-                    else if (line2.Contains("Disallow"))
-                    {
-                        disallowedUrls.Add(words[1]);
-                    }
-                    line = reader.ReadLine();
-                }*/
                 startXML();
             }
         }
@@ -181,6 +183,7 @@ namespace WorkerRole1
                 }
             }
         }
+
         //Process an XML Page of links and add the links appropriately to the data storage
         public void ProcessXML(string url)
         {
@@ -258,6 +261,14 @@ namespace WorkerRole1
 
         public void ProcessHTML(string url)
         {
+            string baseUrl = "http://cnn.com";
+            foreach (string baseCheck in baseUrls)
+            {
+                if (url.Contains(baseCheck))
+                {
+                    baseUrl = baseCheck;
+                }
+            }
             if (crawlerStatus >= 0)
             {
                 if (!tableContains(url))
@@ -270,6 +281,7 @@ namespace WorkerRole1
                         lTen.Dequeue();
                     }
                     string pageTitle = "";
+                    string pageText = "";
                     string date = "";
                     string statusCode = "";
                     string errorMessage = "";
@@ -341,6 +353,8 @@ namespace WorkerRole1
                             {
                                 date = pageDate.Attributes["content"].Value.Substring(0, 10);
                             }
+                            var pageNode = htmlDoc.DocumentNode.SelectSingleNode("//body");
+                            pageText = cleanHTML(pageNode);
                         }
                     }
                     //400 or 500 error
@@ -352,12 +366,132 @@ namespace WorkerRole1
                     countTable++;
                     updateDash();
 
-                    pageData scrapedData = new pageData(url, pageTitle, date, errorMessage, statusCode);
-                    TableOperation insert = TableOperation.InsertOrReplace(scrapedData);
-                    tableRef = tableClient.GetTableReference("pageData");
-                    tableRef.Execute(insert);                
+                    //Chop off the ' - CNN.com' or ' | Bleacher Report'
+                    string pattern;
+                    if (baseUrl == "http://cnn.com")
+                    {
+                        pattern = " - CNN.com";
+                    }
+                    else
+                    {
+                        pattern = " | Bleacher Report";
+                    }
+                    Regex clean = new Regex(pattern);
+                    string cleanTitle = clean.Replace(pageTitle, "");
+
+                    char[] delim = { ' ', '-', '!', '(', ')', ',', '.', '?', ':', ';', '{', '}', '&', '$', '/', '\\', '|', '\'', '\"' };
+                    List<string> titleWords = cleanTitle.Split(delim).ToList();
+                    //Index all of the body word texts as well
+                    List<string> bodyWords = pageText.Split(delim).ToList();
+                    foreach (string word in bodyWords)
+                    {
+                        titleWords.Add(word);
+                    }
+                    foreach (string title in titleWords)
+                    {
+                        string titleWord = title.ToLower();
+                        if (!titleWord.Equals(null) && (titleWord.Length > 2) && !titleWord.Equals("the") && !titleWord.Equals("and") && !titleWord.Equals("but") && !titleWord.Equals("cnn") &&
+                            !titleWord.Equals("000") && !titleWord.Equals("nbsp")) ;
+                        {
+                            pageData scrapedData = new pageData(titleWord, url, pageTitle, pageText, date, errorMessage, statusCode);
+                            TableOperation insert = TableOperation.InsertOrReplace(scrapedData);
+                            tableRef = tableClient.GetTableReference("pageData");
+                            tableRef.Execute(insert);
+                        }
+                    }           
                 }
             }
+        }
+
+        //Remove extra children node and junk from an html body node element and return its inner html
+        //text as a string up to 1000 characters in length
+        private string cleanHTML(HtmlNode pageNode)
+        {
+            var scriptNodes = pageNode.SelectNodes("//script");
+            //Get Rid of all of the script tags
+            if (scriptNodes != null)
+            {
+                foreach (var node in scriptNodes)
+                {
+                    node.Remove();
+                }
+            }
+            var footerNodes = pageNode.SelectNodes("//footer");
+            if (footerNodes != null)
+            {
+                foreach (var node in footerNodes)
+                {
+                    node.Remove();
+                }
+            }
+            var iframNodes = pageNode.SelectNodes("//iframe");
+            if (iframNodes != null)
+            {
+                foreach (var node in iframNodes)
+                {
+                    node.Remove();
+                }
+            }
+            var navNodes = pageNode.SelectNodes("//nav");
+            if (navNodes != null)
+            {
+                foreach (var node in navNodes)
+                {
+                    node.Remove();
+                }
+            }
+            var spanNodes = pageNode.SelectNodes("//span");
+            if (spanNodes != null)
+            {
+                foreach (var node in spanNodes)
+                {
+                    node.Remove();
+                }
+            }
+            var updateTimeNodes = pageNode.SelectNodes("//p[@class='update-time']");
+            if (updateTimeNodes != null)
+            {
+                foreach (var node in updateTimeNodes)
+                {
+                    node.Remove();
+                }
+            }
+
+            var captionNodes1 = pageNode.SelectNodes("//div[@class='el__gallery-showhide']");
+            if (captionNodes1 != null)
+            {
+                foreach (var node in captionNodes1)
+                {
+                    node.Remove();
+                }
+            }
+
+            var captionNodes2 = pageNode.SelectNodes("//div[@class='el__gallery-photocount']");
+            if (captionNodes2 != null)
+            {
+                foreach (var node in captionNodes2)
+                {
+                    node.Remove();
+                }
+            }
+
+            var cleanPageNode = pageNode.InnerHtml;
+            string pageText = pageNode.InnerText;
+            //Get rid of </form> tags
+            Regex cleanBody1 = new Regex("</form>");
+            pageText = cleanBody1.Replace(pageText, "");
+            //Get rid of HTML comments
+            pageText = Regex.Replace(pageText, "<!--.*?-->", "", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            //Condense multiple spaces to a single space
+            Regex spaces = new Regex(@"[ ]{2,}");
+            pageText = spaces.Replace(pageText, @" ");
+            pageText = Regex.Replace(pageText, "Hide Caption", "", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            //Only return up to 1000 characters of a string
+            if (pageText.Length > 1000)
+            {
+                pageText = pageText.Substring(0, 1000);
+            }
+            return pageText;
         }
 
         public bool UrlAllowed(string url)
@@ -394,12 +528,12 @@ namespace WorkerRole1
         public void startCrawl()
         {
             string url = "http://www.cnn.com";
-            //string url2 = "http://bleacherreport.com";
+            string url2 = "http://bleacherreport.com";
             queueRef2.CreateIfNotExists();
             CloudQueueMessage message = new CloudQueueMessage(url);
-            //CloudQueueMessage message2 = new CloudQueueMessage(url2);
+            CloudQueueMessage message2 = new CloudQueueMessage(url2);
             queueRef2.AddMessage(message);
-            //queueRef2.AddMessage(message2);
+            queueRef2.AddMessage(message2);
 
             crawlerStatus = 1;
             updateDash();
@@ -409,7 +543,6 @@ namespace WorkerRole1
         public void stopCrawl()
         {
             crawlerStatus = 0;
-
             updateDash();
         }
 
@@ -428,6 +561,7 @@ namespace WorkerRole1
 
             crawlerStatus = -1;
 
+            startSitemap();
             updateDash();
         }
         //Empty the table with Webpage data
